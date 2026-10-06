@@ -1,0 +1,64 @@
+# Brewfile - モバイルアプリ開発Mac セットアップ用
+#
+# 使い方:
+#   brew bundle --file=~/Brewfile
+#
+# ※1 Apple ID サインインが禁止のため Mac App Store は使えません。
+#     `mas` と mas 行は使用不可です（RunCat → stats に差し替え済み）。
+# ※2 既に入っているアプリがある場合は、その該当行を
+#     コメントアウトしてから流してください（個人PCではそのまま使えます）。
+# ※3 Xcode 本体はここでは入りません。実行後に下記を別途実行してください。
+#     xcodes signin
+#     xcodes install <プロジェクトが要求するバージョン>
+#     xcodes select  <プロジェクトが要求するバージョン>
+
+# --- CLI ---
+brew "git"
+brew "gh"           # GitHub CLI
+brew "xcodes"       # Xcodeのバージョン管理
+brew "aria2"        # xcodes のダウンロード高速化
+
+# --- Ruby（CocoaPods / Fastlane 用）---
+brew "rbenv"
+brew "ruby-build"
+# ※ インストール後に別途:
+#   rbenv install <version> && rbenv global <version>
+#   gem install cocoapods fastlane
+
+# --- IDE ---
+cask "visual-studio-code"
+cask "android-studio"     # SDK/エミュレータは初回起動ウィザードで導入
+
+# --- 開発ツール ---
+cask "claude-code"
+cask "sourcetree"
+cask "charles"
+cask "apidog"
+cask "figma"
+
+# --- コミュニケーション / ブラウザ ---
+# 別経路で配布されている場合は該当行を外す。
+cask "slack"
+cask "google-chrome"
+
+# --- 日常ツール ---
+cask "clipy"
+cask "app-cleaner"
+cask "keyboard-cleaner"
+cask "google-drive"
+cask "shottr"
+cask "stats"              # メニューバーのCPU/メモリ監視（RunCatの代替）
+
+# --- VS Code 拡張機能 ---
+vscode "ms-ceintl.vscode-language-pack-ja"   # 日本語UI
+vscode "editorconfig.editorconfig"
+vscode "eamodio.gitlens"
+vscode "sswg.swift-lang"                     # Swift
+vscode "fwcd.kotlin"                         # Kotlin
+vscode "redhat.vscode-yaml"
+
+# --- 使用不可 / 意図的に除外 ---
+# brew "mas"                        # Apple ID サインイン禁止のため使用不可
+# mas "RunCat", id: 1429033973      # 同上。cask "stats" で代替
+# cask "mongodb-realm-studio"       # 不要
+# cask "github-copilot-for-xcode"   # 不要（Claude Code を使う）
