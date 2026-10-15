@@ -1,109 +1,80 @@
 # mac-setup
 
-新しい Mac の設定を、対話式のスクリプトでまとめて適用する。
+個人の Mac を新しくしたときのセットアップ。**新しい Mac のターミナルに、次の1行を貼るところから始める。**
 
 ```bash
-bash scripts/apply-macos-settings.sh --dry-run   # 何が適用されるか確認
-bash scripts/apply-macos-settings.sh             # 項目ごとに y/N で選ぶ
-bash scripts/apply-macos-settings.sh --all       # すべて適用
+curl -fsSL https://raw.githubusercontent.com/WaltRyusan/mac-setup/main/install.sh | bash
 ```
 
-**検証環境: macOS 26.2（Tahoe）**
+これで、Command Line Tools → このリポジトリの clone → アプリの一括インストール → GitHub へのログイン → スキルの用意、まで順に進む。
+質問はすべて `[Y/n]` の形で、**Enter だけなら大文字の既定の答え**になる。最後に、残りの手順が表示される。
+
+> 何をするか先に見たいときは `… | bash -s -- --dry-run`。clone 先は `MAC_SETUP_DIR` で変えられる（既定: `~/Documents/personal/mac-setup`）。
+> セットアップが終わったら、このリポジトリは手元から消してよい（スキルは別のリポジトリ `claude-skills` にある）。
 
 ---
 
-## 何をするもの
+## 全体の流れ
 
-`defaults` コマンドで設定できる項目を30件、対話で選んで適用する。
-
-| カテゴリ | 項目数 | 例 |
+| | 手順 | どこでやるか |
 |---|---|---|
-| Finder | 8 | パスバー・隠しファイル・拡張子・リスト表示 |
-| Dock | 7 | 自動非表示・サイズ・表示遅延・最小化エフェクト |
-| キーボード | 6 | キーリピート最速化・Caps Lock の英字かな切替・F1/F2 |
-| スクリーンショット | 3 | 保存先・影の除去・JPG 化 |
-| トラックパッド | 2 | タップでクリック・三本指ドラッグ |
-| 日本語入力 | 1 | ライブ変換 OFF ＋ Windows風のキー操作 ON |
-| その他 | 3 | ダークモード・操作スペースの自動並べ替え・zsh プロンプト |
+| 1 | Command Line Tools・clone | `install.sh`（README の1行） |
+| 2 | Homebrew・アプリ（一覧から選ぶ）・DerivedData の定期削除 | `scripts/bootstrap.sh`（1 から続けて動く） |
+| 3 | GitHub へのログイン・git の名前とメールアドレス・SSH 鍵 | 同上。`gh auth login` だけはブラウザでの操作が要る（ログインしていなければ案内が出るので、ログイン後にもう一度実行） |
+| 4 | スキル（`WaltRyusan/claude-skills`）の clone と、使うスキルのリンク | 同上 |
+| 5 | macOS の設定 | `scripts/apply-macos-settings.sh`（36項目。実行前にシステム設定アプリを閉じる） |
+| 6 | **再起動** | トラックパッド・キーリピート・ファンクションキーは再起動（再ログイン）まで反映されない |
+| 7 | 手作業の設定 | `scripts/manual-settings.md`（Finder のサイドバー・Spotlight・Chrome のタブ・Clipy・ターミナルのタイトル） |
+| 8 | Xcode（最新の正式版）・Flutter | `bootstrap.sh` の最後の案内に従う |
+| 9 | Dock を並べる | `scripts/arrange-dock.sh`（**Xcode などを全部入れ終わってから**。入っていないアプリは飛ばす） |
 
-GUI でしか設定できないものは `scripts/manual-settings.md` に手順がある。
-全項目の背景と `defaults` の確度評価は `references/macos-settings.md`。
+## Claude Code から進めるとき
+
+Claude Code のコマンド実行ではキーボードの入力を渡せないので、質問のあるスクリプトをそのまま動かすと、すべて既定の答えで進んでしまう。
+**質問は Claude Code が会話で聞き、その答えをオプションで渡す。**
+
+```bash
+bash scripts/bootstrap.sh --yes --skip charles,derived-data   # アプリは Brewfile の名前、手順は derived-data / ssh-key / skills
+bash scripts/apply-macos-settings.sh --list                    # 番号つきの一覧を見る（何も変えない）
+bash scripts/apply-macos-settings.sh --yes --skip 3,12 --with 17   # 3・12 番を外し、既定が N の 17 番を入れる
+```
+
+パスワードやブラウザが要るもの（Homebrew の初回インストール・`gh auth login`・`xcodes install`）は、ターミナルで直接打つ。
+
+## 入っているもの
+
+| ファイル | 中身 |
+|---|---|
+| `install.sh` | 入口。Command Line Tools を入れ、このリポジトリを clone して `bootstrap.sh` に渡す |
+| `scripts/bootstrap.sh` | Homebrew・アプリ・定期削除・GitHub・git・SSH 鍵・スキル |
+| `scripts/Brewfile` | 入れるアプリの一覧。行末のコメントが、選ぶときに表示される説明 |
+| `scripts/apply-macos-settings.sh` | macOS の設定（36項目。Dock・Finder・キーボード・日本語入力・トラックパッド・Spotlight・ターミナル・zsh） |
+| `scripts/arrange-dock.sh` | Dock に並べるアプリの設定 |
+| `scripts/install-derived-data-cleaner.sh` | Xcode の DerivedData の定期削除（launchd に登録。`--uninstall` で止める） |
+| `scripts/manual-settings.md` | GUI でしかできない設定の手順 |
+| `references/macos-settings.md` | 各設定の背景・`defaults` のキー・確度・実機で確かめたこと |
 
 ## 反映のタイミングが項目で違う
 
-**ここが一番ハマる。** 設定直後に効いていなくても失敗ではない。
+**ここが一番ハマる。** 設定した直後に効いていなくても失敗ではない。
 
 | 反映 | 項目 |
 |---|---|
 | 即座 | Finder / Dock / スクリーンショット / Caps Lock の英字切替 / 日本語入力 |
 | 再ログイン後 | キーリピート / F1・F2 |
-| **再起動後** | **トラックパッド（タップでクリック・三本指ドラッグ）** |
+| **再起動後** | **トラックパッド（タップでクリック・三本指ドラッグ・軌跡の速さ）** |
 
-> **実行前にシステム設定アプリを閉じること。** 開いたままだと、アプリの終了時に
-> 古い値で plist が上書きされる。
+> **実行前にシステム設定アプリを閉じること。** 開いたままだと、アプリを閉じたときに古い値で上書きされる。
 
-## 実機で確かめたこと（macOS 26.2）
+## 実機で確かめたこと（macOS 26）
 
-ネット上のコマンドをそのまま載せず、動くかどうかを確認した結果を載せている。
+ネット上のコマンドをそのまま載せず、動くかどうかを確かめた結果を載せている。詳しくは `references/macos-settings.md`。
 
-- **トラックパッドは `defaults` で設定できる。ただし `killall` では反映されない。**
-  3ドメインに書き込んだうえで `killall SystemUIServer` / `killall cfprefsd` /
-  システム設定を閉じての書き直しを試したが、いずれも値は変わるのに挙動は変わらなかった。
-  **再起動を挟むと反映された**（再起動とログアウトのどちらが必須かは切り分けていない）
-- **Caps Lock の英字かな切替は `NSGlobalDomain TISRomanSwitchState`。**
-  `com.apple.HIToolbox` ではない。GUI の ON/OFF 前後で `defaults read` の全ドメイン
-  差分を取って特定した（42行の差分のうち、設定キーの変化はこの1件のみ）
-- **日本語入力は `com.apple.inputmethod.Kotoeri` の3キー**（`JIMPrefLiveConversionKey` /
-  `JIMPrefWindowsModeKey` / `JIMPrefAutocorrectionKey`）。こちらは再起動不要で反映される
-- **Dock のアプリ構成は `defaults` だけで設定できる。** `dockutil` は要らない。
-  `persistent-apps` は入れ子の配列だが `-array-add` で追加でき、`_CFURLStringType` に
-  `0` を渡せば macOS 側が `file://` 形式へ正規化する
-- **ターミナルのタイトルバーの一部は AppleScript では制御できない。**
-  `title displays ...` の5プロパティをすべて反転しても、「作業ディレクトリ」と
-  「動作中のプロセス名」（`ShowRepresentedURLInTitle` / `ShowActiveProcessInTitle`）は
-  動かなかった。この2つは `defaults` で書くしかなく、Terminal 起動中は反映されない
-
-## GUI にしかない設定のキーを自分で調べる方法
-
-上記のキーはこの方法で特定した。**どの macOS バージョンでも通用する。**
-
-```bash
-defaults read > ~/Desktop/before.txt     # 1. 変更前のスナップショット
-# 2. システム設定を開いて、目的の項目を GUI で変更する
-defaults read > ~/Desktop/after.txt      # 3. 変更後のスナップショット
-diff ~/Desktop/before.txt ~/Desktop/after.txt   # 4. 差分 = 正解のキー
-```
-
-タイムスタンプやカウンタ（`_DKThrottledActivity` / `TRIGGER_TYPE_*` など）がノイズとして
-混ざるので、それを除けば残るのは1〜2件になる。
-
-## ファイル
-
-| | |
-|---|---|
-| `scripts/apply-macos-settings.sh` | 設定の適用（対話／`--all`／`--dry-run`） |
-| `scripts/manual-settings.md` | GUI でしか設定できないものの手順 |
-| `scripts/Brewfile` | 開発ツールの一覧（`brew bundle --file=scripts/Brewfile`） |
-| `references/macos-settings.md` | 全項目の背景・GUI 手順・`defaults` の確度評価・zsh プロンプト |
-
-## zsh プロンプト
-
-`apply-macos-settings.sh` の最後の項目で `~/.zshrc` に追記される。
-
-```
-my-project % ls
-── 2026-10-06 13:21:22        ← コマンドを実行した時刻（preexec で出す）
-agents  docs  skills  ...
-                               ← 出力の後に空行が入り、前の結果と混ざらない
-my-project %
-```
-
-ユーザー名とホスト名を消しているので、**スクショを貼るときにマスキングが要らない**。
-カレントパスのフルパスはタイトルバーに出す（GUI 設定ではなくエスケープシーケンスで
-書いているため、iTerm2 など他のターミナルでも効く）。
-
-## 注意
-
-- `defaults write` は**すべてを実機検証したわけではない**。`references/macos-settings.md` に
-  ✅（定番キー）/ ⚠️（条件付き）/ ❓（未検証・GUI 推奨）の3段階で確度を記載している
-- `Brewfile` は個人の用途（iOS / Android アプリ開発）に寄っている。そのまま使わず中身を見て選ぶこと
+- **トラックパッドは `defaults` で設定できるが、`killall` では反映されない。** 再起動を挟むと反映された
+- **Caps Lock の英字かな切替は `NSGlobalDomain TISRomanSwitchState`**（`com.apple.HIToolbox` ではない）。GUI の切り替え前後の差分で特定した
+- **日本語入力は `com.apple.inputmethod.Kotoeri` のキー**。「／」キーで入力する文字は `JIMPrefCharacterForSlashKey`（`0` = `/`、`1` = `・`）
+- **キーリピートの GUI の最速は `KeyRepeat 2` / `InitialKeyRepeat 15`**。トラックパッドの軌跡の速さは GUI の最大が `3` で、コマンドなら `6` まで上げられた（再起動後に効く）
+- **F1・F2 を標準のファンクションキーにするのは `com.apple.keyboard.fnState true`**（`false` が既定で、F1 で明るさが変わる）
+- **Dock のアプリの並びは `defaults` だけで設定できる。** `dockutil` は要らない
+- **アプリを切り替えたときに操作スペースへ移動しない設定は `NSGlobalDomain AppleSpacesSwitchOnActivate false`**
+- **ターミナルのタイトルの「大きさ」は AppleScript で外せる。** 「作業ディレクトリまたは書類」は、`defaults` で書いても起動中のターミナルに上書きされるため GUI で外す

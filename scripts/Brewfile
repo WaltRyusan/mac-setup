@@ -1,64 +1,51 @@
-# Brewfile - モバイルアプリ開発Mac セットアップ用
+# Brewfile - 個人の Mac のセットアップ用
 #
 # 使い方:
-#   brew bundle --file=~/Brewfile
+#   bootstrap.sh が、この一覧を説明つきで見せて、入れるものを選ばせてから入れる。
+#   全部そのまま入れるなら: brew bundle --file=<この Brewfile>
 #
-# ※1 Apple ID サインインが禁止のため Mac App Store は使えません。
-#     `mas` と mas 行は使用不可です（RunCat → stats に差し替え済み）。
-# ※2 既に入っているアプリがある場合は、その該当行を
-#     コメントアウトしてから流してください（個人PCではそのまま使えます）。
-# ※3 Xcode 本体はここでは入りません。実行後に下記を別途実行してください。
-#     xcodes signin
-#     xcodes install <プロジェクトが要求するバージョン>
-#     xcodes select  <プロジェクトが要求するバージョン>
+# 書き方: 1行に1つ。行末の「# 」以降が、選ぶときに表示する説明になる（必ず書く）。
+# ※ Mac App Store のアプリ（mas の行）は、App Store にサインインしてから入れる。
+# ※ Xcode はここでは入れない（bootstrap の最後の案内に従う）。
 
 # --- CLI ---
-brew "git"
-brew "gh"           # GitHub CLI
-brew "xcodes"       # Xcodeのバージョン管理
-brew "aria2"        # xcodes のダウンロード高速化
-
-# --- Ruby（CocoaPods / Fastlane 用）---
-brew "rbenv"
-brew "ruby-build"
-# ※ インストール後に別途:
-#   rbenv install <version> && rbenv global <version>
-#   gem install cocoapods fastlane
+brew "git"                     # git（バージョン管理）。macOS 標準より新しい版
+brew "gh"                      # GitHub CLI。GitHub へのログイン・リポジトリの clone・PR に使う
+brew "xcodes"                  # Xcode を版を指定して入れる・切り替えるツール
+brew "mas"                     # Mac App Store のアプリをコマンドで入れるツール（RunCat Neo に使う）
 
 # --- IDE ---
-cask "visual-studio-code"
-cask "android-studio"     # SDK/エミュレータは初回起動ウィザードで導入
+cask "visual-studio-code"      # VS Code（エディタ）
+cask "android-studio"          # Android Studio（最新版。SDK とエミュレータは初回起動のウィザードで入れる）
 
 # --- 開発ツール ---
-cask "claude-code"
-cask "sourcetree"
-cask "charles"
-cask "apidog"
-cask "figma"
+cask "claude-code"             # Claude Code（ターミナルで使う AI。CLI）
+cask "claude"                  # Claude のデスクトップアプリ
+cask "sourcetree"              # Sourcetree（git の GUI クライアント）
+cask "charles"                 # Charles（通信の中身を見るプロキシ。API のデバッグ用）
+cask "figma"                   # Figma（デザインを見る・作る）
 
 # --- コミュニケーション / ブラウザ ---
-# 別経路で配布されている場合は該当行を外す。
-cask "slack"
-cask "google-chrome"
+cask "slack"                   # Slack（チャット）
+cask "google-chrome"           # Google Chrome（ブラウザ）
 
 # --- 日常ツール ---
-cask "clipy"
-cask "app-cleaner"
-cask "keyboard-cleaner"
-cask "google-drive"
-cask "shottr"
-cask "stats"              # メニューバーのCPU/メモリ監視（RunCatの代替）
+cask "shottr"                  # Shottr（スクリーンショット。範囲指定・注釈・文字の読み取り）
+cask "clipy"                   # Clipy（クリップボードの履歴・定型文）
+cask "app-cleaner"             # App Cleaner & Uninstaller（アプリを関連ファイルごと消す）
+cask "keyboard-cleaner"        # KeyboardCleaner（掃除のあいだキーボードを無効にする）
+mas "RunCat Neo", id: 6757801838   # RunCat Neo（メニューバーで CPU の負荷を走る猫で表示）
 
 # --- VS Code 拡張機能 ---
-vscode "ms-ceintl.vscode-language-pack-ja"   # 日本語UI
-vscode "editorconfig.editorconfig"
-vscode "eamodio.gitlens"
-vscode "sswg.swift-lang"                     # Swift
-vscode "fwcd.kotlin"                         # Kotlin
-vscode "redhat.vscode-yaml"
+vscode "ms-ceintl.vscode-language-pack-ja"   # VS Code を日本語の表示にする
+vscode "editorconfig.editorconfig"           # EditorConfig（インデントなどをリポジトリの設定に合わせる）
+vscode "eamodio.gitlens"                     # GitLens（行ごとの変更履歴を見る）
+vscode "sswg.swift-lang"                     # Swift の言語サポート
+vscode "fwcd.kotlin"                         # Kotlin の言語サポート
+vscode "redhat.vscode-yaml"                  # YAML の言語サポート
 
-# --- 使用不可 / 意図的に除外 ---
-# brew "mas"                        # Apple ID サインイン禁止のため使用不可
-# mas "RunCat", id: 1429033973      # 同上。cask "stats" で代替
-# cask "mongodb-realm-studio"       # 不要
-# cask "github-copilot-for-xcode"   # 不要（Claude Code を使う）
+# --- 意図的に除外 ---
+# brew "rbenv" / "ruby-build"       # 個人では Ruby を使わない
+# brew "aria2"                      # 常駐させない。Xcode を入れるときだけ一時的に入れて、終わったら消す
+# cask "apidog"                     # 個人では使わない
+# cask "google-drive"               # 不要（Claude からは MCP で読み書きできる）
