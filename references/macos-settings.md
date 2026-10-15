@@ -1,4 +1,4 @@
-# Mac 推奨設定（モバイルアプリ開発向け）
+# Mac の設定（個人の Mac 用）
 
 対象：macOS 26（Tahoe）以上、Xcode + Android Studio を使うモバイル開発者。
 
@@ -108,14 +108,6 @@ defaults write com.apple.screencapture location ~/Pictures/Screenshots
 killall SystemUIServer
 ```
 
-## A-2. 影をなくす・JPG化 ✅
-
-```bash
-defaults write com.apple.screencapture disable-shadow -bool true   # 影（余白）をなくす
-defaults write com.apple.screencapture type jpg                    # ドキュメントへの貼り付けが軽くなる
-killall SystemUIServer
-```
-
 ---
 
 # B. 操作スペース（Mission Control）
@@ -141,6 +133,24 @@ killall Dock
 - 操作スペースの移動は `Ctrl + ←/→`
 - 番号直打ち（`Ctrl + 1/2/3`）は、システム設定 → キーボード → キーボードショートカット → Mission Control で有効化が必要
 - マルチディスプレイの人は「ディスプレイごとに個別の操作スペース」も要確認
+
+## B-2. アプリを切り替えても操作スペースを移動しない ✅
+
+**課題**：Dock や Cmd+Tab でアプリを切り替えると、そのアプリのウインドウがある操作スペースへ画面ごと飛び、
+位置を決めて並べた操作スペースの間を勝手に行き来してしまう。
+
+**GUI**
+1. システム設定 →「デスクトップとDock」→ **Mission Control** セクション
+2. **「アプリケーションの切り替えで、アプリケーションのウインドウが開いている操作スペースに移動」を OFF**
+
+**コマンド** ✅（2026-10 / macOS 26.5、GUI で OFF にした前後の値で確認）
+```bash
+defaults write NSGlobalDomain AppleSpacesSwitchOnActivate -bool false
+killall Dock
+```
+
+**注意**：OFF にすると、別の操作スペースにしかウインドウがないアプリへ切り替えても移動しないため、
+アプリは前面になってもウインドウが見えないことがある。Dock のアイコンを右クリックしてウインドウを選ぶか、操作スペースを自分で移動する。
 
 ---
 
@@ -172,15 +182,73 @@ defaults write NSGlobalDomain TISRomanSwitchState -bool true
 - ⚠ ドメインは `com.apple.HIToolbox` ではなく **`NSGlobalDomain`**。GUI の ON/OFF 前後で
   `defaults read` の全ドメイン差分を取って特定した（変化したのはこのキーのみ）
 
-### 選択肢B：Control に変更 ❓GUI推奨
+### 選択肢B：Control に変更 ⚠️（要再起動）
 
 ターミナル操作（`^C` `^R` `^A` `^E`）が小指ひとつで打てます。
 
 - システム設定 → キーボード → 「キーボードショートカット…」→ **修飾キー** → Caps Lock を `⌃ Control` に
 
-### 選択肢C：Escape に変更 ❓GUI推奨
+### 選択肢C：Escape に変更 ⚠️（要再起動）
 
 Vim / Xcode の Vim モードを使う人向け。上記と同じ画面で `⎋ Escape` を選択。
+
+### B・C の `defaults` キー（2026-10 実測）
+
+**修飾キーのリマップも `defaults` で設定できます。ただし反映には再起動が必要です。**
+トラックパッドと同じ挙動でした。
+
+```bash
+# 現在値を読む（-currentHost 配下。キー名の 0-0-0 は <VendorID>-<ProductID>-0）
+defaults -currentHost read -g com.apple.keyboard.modifiermapping.0-0-0
+```
+
+```
+(
+    { HIDKeyboardModifierMappingDst = 30064771300;    ← 割り当て先（Control）
+      HIDKeyboardModifierMappingSrc = 30064771129; }  ← 割り当て元（Caps Lock）
+)
+```
+
+**設定するコマンド**（2026-10 に書き込みまで検証済み。GUI 操作で作られるものと同一構造になる）
+
+```bash
+# Caps Lock → Control
+defaults -currentHost write -g com.apple.keyboard.modifiermapping.0-0-0 -array \
+  '<dict><key>HIDKeyboardModifierMappingDst</key><integer>30064771300</integer><key>HIDKeyboardModifierMappingSrc</key><integer>30064771129</integer></dict>'
+
+# 既定（Caps Lock のまま）に戻す
+defaults -currentHost delete -g com.apple.keyboard.modifiermapping.0-0-0
+```
+
+**HID 値**（`Src` / `Dst` に入れる値）
+
+| キー | 値 | 根拠 |
+|---|---|---|
+| Caps Lock | 30064771129 | ✅ 実測（GUI 変更の差分） |
+| Control | 30064771300 | ✅ 実測（同上） |
+
+**Escape や Option など他のキーの値は調べていません。** ネット上の一覧を転記せず、
+自分で確かめてください。1回 GUI で設定すれば読み出せます。
+
+```bash
+# 1. システム設定 → キーボード → キーボードショートカット… → 修飾キー で目的の割り当てにする
+# 2. 値を読む
+defaults -currentHost read -g com.apple.keyboard.modifiermapping.0-0-0
+```
+
+**内蔵キーボードの ID は `0-0-0`** です（`ioreg -c AppleHIDKeyboardEventDriverV2 -r -d 1` で
+`VendorID = 0` / `ProductID = 0` を確認）。外付けキーボードは別の値になるため、
+そのキーボードを接続した状態で GUI から設定し、`defaults -currentHost read -g` で
+現れたキー名を確認してください。
+
+> ⚠️ **スクリプトには入れていません。** 理由は2つ。
+> ① **キー名の `0-0-0` はキーボードごとの vendor/product ID** で、外付けキーボードでは別の値になる。
+> ② 英字かな切替（選択肢A）と**併用できない**。A を使うなら B・C は設定しない。
+>
+> **削除して既定に戻すときも再起動が要ります。**
+> `defaults -currentHost delete -g com.apple.keyboard.modifiermapping.0-0-0` を実行した直後は、
+> Caps Lock が**どの機能にも反応しない状態**になり、再起動して初めて英字かな切替が復活しました
+> （2026-10 / macOS 26.2 実測）。
 
 ### 選択肢D：Karabiner-Elements で「単押し＝IME切替、長押し＝Control」
 
@@ -207,10 +275,16 @@ defaults write com.apple.inputmethod.Kotoeri JIMPrefAutocorrectionKey -bool fals
 2. 左で **日本語** を選択
 3. **ライブ変換** を OFF、**Windows風のキー操作** を ON
 4. 「タイプミスを修正」も、意図と違う変換をされるので OFF 推奨
-5. **「¥キーで入力する文字」→ `\`（バックスラッシュ）** にしておくと開発時に楽
+5. 「／」キーで入力する文字を **「・」（中黒）** にする（好み。既定は `/`）
 
-> `¥` キーの設定は `JIMPrefCharacterForSlashKey`（実機では `1`）だが、
-> どの値がどちらに対応するかは**未確認**。GUI で設定するのが確実。
+**「／」キーのコマンド** ✅（2026-10 実測。GUI の切替前後の差分で確認）
+```bash
+defaults write com.apple.inputmethod.Kotoeri JIMPrefCharacterForSlashKey -int 1  # 0 = / / 1 = ・
+```
+
+> **`JIMPrefCharacterForSlashKey` は ¥キーの設定ではない。** 以前は ¥キー（0 = バックスラッシュ）と
+> 誤認して記載し、スクリプトも 0 を書いていた。¥キーの設定キーは特定していない。
+
 > 日本語入力のプロセスは `JapaneseIM-RomajiTyping`。ただし `.appex` として動いているため
 > **`killall` では名前が一致せず再起動できない**（上記の3項目は `killall` 不要で反映される）。
 
@@ -229,29 +303,35 @@ defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
 defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
 ```
 
-## C-4. キーリピート最速化 ✅
+## C-4. キーリピートを GUI の最速にする ✅
 
 **体感で一番効きます。** ターミナル・エディタでのカーソル移動が別物になります。
 
 ```bash
-defaults write NSGlobalDomain KeyRepeat -int 1           # リピート速度（最速）
-defaults write NSGlobalDomain InitialKeyRepeat -int 10   # リピート開始までの時間（最短）
+defaults write NSGlobalDomain KeyRepeat -int 2           # リピート速度（GUI で選べる最速）
+defaults write NSGlobalDomain InitialKeyRepeat -int 15   # リピート開始までの時間（GUI で選べる最短）
 defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false   # 長押しのアクセント入力を無効化
 ```
 
-⚠️ **再ログインが必要です。** また、GUI のスライダーより小さい値を設定できます。
+⚠️ **再ログインが必要です。** また、GUI のスライダーより小さい値（`KeyRepeat 1` / `InitialKeyRepeat 10` など）も
+設定できますが、長押しで連打されすぎるため採用していません。`2` / `15` は GUI で最速にしたときの値を
+差分で読み取ったもので、再起動後も保たれることを確認しています（2026-10 実機）。
 
-## C-5. F1・F2 を標準ファンクションキーとして使用 → OFF ⚠️
+## C-5. F1・F2 を標準ファンクションキーとして使用 → ON ⚠️
 
-OFF（デフォルト）にしておくと **`F10` 単体で「半角英数変換」** が使えます。
-ON にすると `fn + F10` が必要になります。
-画面の明るさや音量より、**日本語入力中の変換（F7 カタカナ / F10 半角英数）の方が使用頻度が高い**ため OFF 推奨。
+OFF（デフォルト）だと F1 で画面が暗くなり、F10 は消音になります。変換に使うには `fn + F10` が必要です。
+ON にすると **`F7`（カタカナ）・`F10`（半角英数）が単体で効きます。** 明るさや音量は `fn` + キーになります。
+画面の明るさや音量より、**日本語入力中の変換の方が使用頻度が高い**ため ON 推奨。
 
-**GUI**：システム設定 → キーボード → 「F1、F2などのキーを標準のファンクションキーとして使用」を OFF
+> 以前は「OFF で F10 単体が使える」と逆向きに書いていた。新 Mac で F1 を押すと明るさが下がる
+> （＝ OFF の挙動）ことを確認して訂正した。`defaults` で `true` を書いて再起動したあと、
+> F1 で明るさが変わらず F10 で半角英数に変換されることも確認した（2026-10）。
+
+**GUI**：システム設定 → キーボード → 「F1、F2などのキーを標準のファンクションキーとして使用」を ON
 
 **コマンド** ⚠️（再ログインが必要。外付けキーボードは個別設定になる場合あり）
 ```bash
-defaults write NSGlobalDomain com.apple.keyboard.fnState -bool false
+defaults write NSGlobalDomain com.apple.keyboard.fnState -bool true
 ```
 
 ---
@@ -266,7 +346,13 @@ defaults write NSGlobalDomain com.apple.keyboard.fnState -bool false
 1. システム設定 → **トラックパッド** → 「ポイントとクリック」タブ
 2. **「タップでクリック」を ON**
 
-あわせて「軌跡の速さ」を右寄りに（デフォルトは遅い）。
+あわせて「軌跡の速さ」も設定する（`NSGlobalDomain com.apple.trackpad.scaling`。既定は遅い）。
+こちらもスクリプトに含まれており、GUI 操作は不要。**GUI のスライダーの最大は `3`** だが、コマンドなら
+それより速くできる。`5`・`6` とも再起動後に効くことを確認し、スクリプトは `6` にしている（2026-10 実機）。
+
+```bash
+defaults write NSGlobalDomain com.apple.trackpad.scaling -float 6   # ★要再起動
+```
 
 **コマンド** ⚠️（**再起動するまで反映されません。** `killall` では不十分）
 ```bash
@@ -354,7 +440,7 @@ killall Finder
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true              # 拡張子を常に表示
 defaults write com.apple.finder FXDefaultSearchScope -string "SCcf"          # 検索を現在のフォルダ内に
 defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false   # 拡張子変更の警告を無効化
-defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true # ネットワークドライブに .DS_Store を作らない
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true # ネットワークドライブに .DS_Store を作らない（NAS・共有フォルダを使う人だけ。スクリプトでは既定 N）
 killall Finder
 ```
 
@@ -388,7 +474,7 @@ killall Dock
 # G. ターミナルのプロンプト設定（zsh）
 
 コマンドの左に出る `ユーザー名@PC名` を消して、**現在地のフォルダ名だけ**にします。
-**ブログや記事にスクショを貼るときにマスキングが不要になる**のが大きいです。
+**ブログや Slack にスクショを貼るときにマスキングが不要になる**のが大きいです。
 
 あわせて**コマンドを実行した時刻**を出します。何をいつ実行したかが端末に残るので、
 後から経緯を追うときのログになります。
@@ -414,7 +500,7 @@ killall Dock
 | 影響範囲 | **そのMacの全ユーザー** | 自分だけ |
 | `sudo` | 必要 | **不要** |
 | OSアップデート | **上書きされる可能性** | 影響なし |
-| 管理された端末 | 管理ツールの構成と衝突しうる | 安全 |
+| 組織が管理している端末 | 管理の設定と衝突しうる | 安全 |
 | PC入れ替え | 移行が面倒 | **ファイル1つコピーで済む** |
 
 **`~/.zshrc` に書けば `sudo` も不要で、記事にある「書き込み権限がなくて保存できない」問題も起きません。**
@@ -429,7 +515,7 @@ code ~/.zshrc          # VS Code で開く（vim が苦手ならこれが早い�
 # vim ~/.zshrc         # Vim
 ```
 
-ファイル末尾に追記：
+`apply-macos-settings.sh` では、下の4つ（プロンプト・実行時刻・タイトルのパス・出力後の空行）を**1つずつ選んで**追記できる。手で書く場合はファイル末尾に追記：
 
 ```bash
 # ---- プロンプト設定 ----
@@ -474,9 +560,9 @@ source ~/.zshrc        # 反映
 | 記号 | 意味 | 表示例 |
 |---|---|---|
 | `%n` | ユーザー名 | `<ユーザー名>` |
-| `%m` | ホスト名 | `MacBook-Pro` |
-| `%~` | カレントディレクトリ（フルパス） | `~/Documents/work` |
-| `%1~` | カレントディレクトリ（末尾1階層） | `work` |
+| `%m` | ホスト名 | `JN25-M030` |
+| `%~` | カレントディレクトリ（フルパス） | `~/Documents/projects` |
+| `%1~` | カレントディレクトリ（末尾1階層） | `projects` |
 | `%*` | 時刻（24時間） | `23:29:38` |
 | `%D{%Y-%m-%d}` | 日付 | `2026-09-30` |
 | `%D{%I:%M:%S %p}` | 時刻（12時間＋AM/PM） | `11:29:38 PM` |
@@ -526,7 +612,7 @@ precmd_functions+=( set_terminal_title )
 
 | 書き方 | タイトルバーの表示 |
 |---|---|
-| `%~` | `~/Documents/work/my-project`（ホームを `~` に短縮） |
+| `%~` | `~/Documents/projects/my-project`（ホームを `~` に短縮） |
 | `%/` | `/Users/<ユーザー名>/Documents/...`（完全な絶対パス） |
 | `%1~` | `my-project`（末尾1階層だけ） |
 
@@ -538,11 +624,27 @@ precmd_functions+=( set_terminal_title )
 
 > ⚠ **方法1と併用すると二重に出ます。** 既定では「カレントディレクトリ」「作動中のプロセス名」
 > 「ウインドウサイズ」が表示されており、方法1の値がそこに**追記される**ため、
-> `my-project — ~/Documents/work/my-project — -zsh — 192×57`
+> `my-project — ~/Documents/projects/my-project — -zsh — 192×57`
 > のように冗長になります（2026-10 実機確認）。方法1を使うなら、GUI 側の
-> **「カレントディレクトリまたは書類」「作動中のプロセス名」「大きさ」のチェックを外す**こと。
-> この GUI 設定を `defaults` で書けるかは**未検証**（`Basic` プロファイルにタイトル関連のキーは
-> 保存されておらず、既定値のままだった）。
+> **「作業ディレクトリまたは書類」と「大きさ」のチェックを外す**こと（「作動中のプロセス名」は好みで残す）。
+
+**設定キーと書き方**（2026-10 実測。GUI の切替前後の差分で特定）
+
+| GUI の項目 | プロファイル内のキー | スクリプトで書けるか |
+|---|---|---|
+| 大きさ | `ShowDimensionsInTitle` | ✅ AppleScript で書ける（`apply-macos-settings.sh` に含む） |
+| 作業ディレクトリまたは書類 | `ShowRepresentedURLInTitle` | ❌ GUI で外す |
+
+```bash
+osascript -e 'tell application "Terminal" to set title displays window size of default settings to false'
+```
+
+> キーはプロファイルごとの辞書（`com.apple.Terminal` の `Window Settings` → プロファイル名）に入る。
+> 既定値のままのプロファイルには保存されていない。
+> **`defaults` で書いた値は、起動中のターミナルが設定を保存した時点で消される**（実測）。
+> AppleScript はターミナル自身が保存するので残る。ただし `ShowRepresentedURLInTitle` に当たる
+> 項目は AppleScript のプロファイル設定に無い（`title displays file name` はタブの属性で、
+> プロファイルには設定できなかった）。
 
 ## うまく反映されないとき
 
@@ -564,42 +666,21 @@ cp ~/.zshrc ~/Desktop/zshrc-backup
 
 # H. その他
 
-## H-1. どこでも掴んでウインドウ移動
+## H-1. Spotlight からビルドの生成物を外す ❓GUI必須
 
-`⌃ + ⌘` を押しながらウインドウのどこでもドラッグ。標準機能ですが意外と知られていません。
+除外の一覧は `defaults` では書けない。手順は `scripts/manual-settings.md` の 3 を参照
+（`apply-macos-settings.sh` で選ぶと、設定画面を開いて追加するフォルダを表示する）。
 
-## H-2. Spotlight からビルド生成物を除外 ❓GUI必須
+## H-2. DerivedData の定期削除
 
-インデックス作成の CPU 負荷が下がり、検索結果のノイズも減ります。
-**iOS/Android 両方をビルドする Mac では効果が大きい。**
-
-システム設定 → **Spotlight** → 「検索プライバシー…」に追加：
-
-```
-~/Library/Developer/Xcode/DerivedData
-~/.gradle
-~/Library/Android/sdk
-```
-
-プロジェクト配下の `build/` `Pods/` `node_modules` も必要に応じて。
-
-## H-3. 集中モード
-
-ビルド待ちの間に Slack 通知で集中が切れるのを防ぎます。
-Claude Code に長い作業を投げている間にも有効。
-
-システム設定 → **集中モード** → 「作業」モードを作成し、許可する人/App を絞る。
-
-## H-4. ディスク容量の見張り
-
-Xcode / Android SDK は放置すると容量を圧迫します。
+Xcode のビルドの生成物（DerivedData）は放置すると容量を圧迫する。
+`scripts/install-derived-data-cleaner.sh` で、macOS の launchd に定期削除を登録できる
+（毎週月曜 11:00 に、7日より古いものを消す。`bootstrap.sh` が入れるか聞く）。
 
 ```bash
-du -sh ~/Library/Developer/Xcode/DerivedData          # Xcodeのビルド生成物
-du -sh ~/Library/Developer/Xcode/iOS\ DeviceSupport   # 古いiOS版（削除可）
-xcrun simctl delete unavailable                       # 使われていないシミュレータを削除
-du -sh ~/.gradle/caches                               # Gradle キャッシュ
-brew cleanup -s                                       # Homebrew の古いキャッシュ
+bash scripts/install-derived-data-cleaner.sh              # 入れる
+bash scripts/install-derived-data-cleaner.sh --uninstall  # 止めて消す
+launchctl kickstart gui/$(id -u)/local.clean-derived-data # 今すぐ1回動かす
 ```
 
 ---
@@ -610,9 +691,9 @@ brew cleanup -s                                       # Homebrew の古いキャ
 （複製すると、スクリプトを直したときに追従漏れが起きるため）。
 
 ```bash
-bash skills/util-mac-migration/scripts/apply-macos-settings.sh --dry-run   # 内容の確認
-bash skills/util-mac-migration/scripts/apply-macos-settings.sh             # 対話で適用
-bash skills/util-mac-migration/scripts/apply-macos-settings.sh --all       # すべて適用
+bash scripts/apply-macos-settings.sh --dry-run   # 内容の確認
+bash scripts/apply-macos-settings.sh             # 対話で適用
+bash scripts/apply-macos-settings.sh --all       # すべて適用
 ```
 
 **実行前にシステム設定アプリを閉じること。** 開いたままだと終了時に古い値で上書きされる。
@@ -621,8 +702,8 @@ bash skills/util-mac-migration/scripts/apply-macos-settings.sh --all       # す
 
 | 反映 | 項目 |
 |---|---|
-| 即座 | スクリーンショット / Dock / Finder / Caps Lock の英字切替 / 日本語入力 |
+| 即座 | スクリーンショット / Dock / Finder（サイドバーのサイズ含む）/ Caps Lock の英字切替 / 日本語入力（／キー含む） |
 | 再ログイン後 | キーリピート / F1・F2 |
-| **再起動後** | **トラックパッド（タップでクリック・三本指ドラッグ）** |
+| **再起動後** | **トラックパッド（タップでクリック・三本指ドラッグ・軌跡の速さ）**<br>**修飾キーのリマップ**（Caps Lock → Control / Escape。設定時も削除時も要再起動） |
 
 GUI 操作が残るものは `scripts/manual-settings.md` を参照。
