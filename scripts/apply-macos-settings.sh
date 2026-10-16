@@ -72,9 +72,8 @@ fi
 if confirm "操作スペースの自動並べ替えを無効化"; then
   defaults write com.apple.dock mru-spaces -bool false
 fi
-if confirm "アプリを切り替えたときに、そのウインドウのある操作スペースへ移動しない"; then
-  defaults write NSGlobalDomain AppleSpacesSwitchOnActivate -bool false
-fi
+# 「アプリを切り替えたときに操作スペースへ移動しない」（AppleSpacesSwitchOnActivate false）は入れない。
+# Cmd+Tab で別の操作スペースにあるアプリへ切り替えられなくなるため（2026-10 実機で確認）。既定（移動する）のままにする
 
 # --- Dock ---
 if confirm "Dock を自動的に非表示にする"; then
