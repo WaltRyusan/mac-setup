@@ -6,10 +6,19 @@
 curl -fsSL https://raw.githubusercontent.com/WaltRyusan/mac-setup/main/install.sh | bash
 ```
 
-これで、Command Line Tools → このリポジトリの clone → アプリの一括インストール → GitHub へのログイン → スキルの用意、まで順に進む。
+**先に clone しておく必要はない。** この1行は、`install.sh` を GitHub から読み込んで（ファイルとしては保存せずに）その場で実行する。
+`install.sh` がやるのは次の3つで、そのあとは clone したリポジトリの `scripts/bootstrap.sh` に引き継ぐ。
+
+1. Command Line Tools を入れる（git が使えるようになる。出てきたウインドウで「インストール」を押す）
+2. このリポジトリを `~/Documents/personal/mac-setup` に clone する（公開リポジトリなので、GitHub へのログインは要らない）
+3. `scripts/bootstrap.sh` を実行する → アプリの一括インストール → GitHub へのログイン → スキルの用意
+
 質問はすべて `[Y/n]` の形で、**Enter だけなら大文字の既定の答え**になる。最後に、残りの手順が表示される。
 
-> 何をするか先に見たいときは `… | bash -s -- --dry-run`。clone 先は `MAC_SETUP_DIR` で変えられる（既定: `~/Documents/personal/mac-setup`）。
+> **もう clone してある場合**は、`bash install.sh`（最新にしてから続ける）か `bash scripts/bootstrap.sh` でよい。
+> clone 先は `MAC_SETUP_DIR` で変えられる（例: `curl … | MAC_SETUP_DIR=~/mac-setup bash`）。
+> 何をするか先に見たいときは `… | bash -s -- --dry-run`。**ただし `--dry-run` が効くのは bootstrap から先だけで、
+> 1・2（Command Line Tools と clone）は実際に行われる。**
 > セットアップが終わったら、このリポジトリは手元から消してよい（スキルは別のリポジトリ `claude-skills` にある）。
 
 ---
