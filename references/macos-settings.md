@@ -378,6 +378,24 @@ defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeF
 
 ---
 
+# D2. メニューバー
+
+## D2-1. Bluetooth を出す ✅
+
+**GUI**: システム設定 → **メニューバー** → Bluetooth を「メニューバーに表示」にする。
+
+**コマンド** ✅（2026-10 / macOS 26.5。GUI で切り替えた前後の値で確認し、コマンドで書いてアイコンが出ることを実機で確かめた）
+```bash
+defaults -currentHost write com.apple.controlcenter Bluetooth -int 2      # 2 = 表示 / 8 = 外す（これが効く）
+defaults write com.apple.controlcenter "NSStatusItem VisibleCC Bluetooth" -bool true   # GUI で表示にすると 1 になる。外しても 1 のまま
+killall ControlCenter
+```
+
+- 効くのは **`-currentHost`** の `Bluetooth` の方。`NSStatusItem VisibleCC Bluetooth` は外しても `1` のままで、表示には効かない
+- メニューバーの中での位置は `NSStatusItem Preferred Position Bluetooth` に入る（スクリプトでは書かない）
+
+---
+
 # E. Finder
 
 ## E-1. パスバーを表示 ✅（必須）

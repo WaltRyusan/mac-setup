@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/WaltRyusan/mac-setup/main/install.s
 | 2 | Homebrew・アプリ（一覧から選ぶ）・DerivedData の定期削除 | `scripts/bootstrap.sh`（1 から続けて動く） |
 | 3 | GitHub へのログイン・git の名前とメールアドレス・SSH 鍵 | 同上。`gh auth login` だけはブラウザでの操作が要る（ログインしていなければ案内が出るので、ログイン後にもう一度実行） |
 | 4 | スキル（`WaltRyusan/claude-skills`）の clone と、使うスキルのリンク | 同上 |
-| 5 | macOS の設定 | `scripts/apply-macos-settings.sh`（35項目。実行前にシステム設定アプリを閉じる） |
+| 5 | macOS の設定 | `scripts/apply-macos-settings.sh`（36項目。実行前にシステム設定アプリを閉じる） |
 | 6 | **再起動** | トラックパッド・キーリピート・ファンクションキーは再起動（再ログイン）まで反映されない |
 | 7 | 手作業の設定 | `scripts/manual-settings.md`（Finder のサイドバー・Spotlight・Chrome のタブ・Clipy・ターミナルのタイトル） |
 | 8 | Xcode（最新の正式版）・Flutter | `bootstrap.sh` の最後の案内に従う |
@@ -57,7 +57,7 @@ bash scripts/apply-macos-settings.sh --yes --skip 3,12 --with 17   # 3・12 番�
 | `install.sh` | 入口。Command Line Tools を入れ、このリポジトリを clone して `bootstrap.sh` に渡す |
 | `scripts/bootstrap.sh` | Homebrew・アプリ・定期削除・GitHub・git・SSH 鍵・スキル |
 | `scripts/Brewfile` | 入れるアプリの一覧。行末のコメントが、選ぶときに表示される説明 |
-| `scripts/apply-macos-settings.sh` | macOS の設定（35項目。Dock・Finder・キーボード・日本語入力・トラックパッド・Spotlight・ターミナル・zsh） |
+| `scripts/apply-macos-settings.sh` | macOS の設定（36項目。Dock・Finder・キーボード・日本語入力・トラックパッド・Spotlight・ターミナル・zsh） |
 | `scripts/arrange-dock.sh` | Dock に並べるアプリの設定 |
 | `scripts/install-derived-data-cleaner.sh` | Xcode の DerivedData の定期削除（launchd に登録。`--uninstall` で止める） |
 | `scripts/manual-settings.md` | GUI でしかできない設定の手順 |
@@ -86,4 +86,5 @@ bash scripts/apply-macos-settings.sh --yes --skip 3,12 --with 17   # 3・12 番�
 - **F1・F2 を標準のファンクションキーにするのは `com.apple.keyboard.fnState true`**（`false` が既定で、F1 で明るさが変わる）
 - **Dock のアプリの並びは `defaults` だけで設定できる。** `dockutil` は要らない
 - **「アプリを切り替えたときに操作スペースへ移動しない」（`AppleSpacesSwitchOnActivate false`）は入れていない。** Cmd+Tab で別の操作スペースのアプリへ切り替えられなくなるため
+- **メニューバーに Bluetooth を出すのは `-currentHost com.apple.controlcenter Bluetooth 2`**（8 で外れる）。`killall ControlCenter` で反映される
 - **ターミナルのタイトルの「大きさ」は AppleScript で外せる。** 「作業ディレクトリまたは書類」は、`defaults` で書いても起動中のターミナルに上書きされるため GUI で外す

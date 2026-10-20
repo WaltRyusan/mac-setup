@@ -99,6 +99,15 @@ if confirm "ダークモードにする"; then
   defaults write -g AppleInterfaceStyle -string "Dark"
 fi
 
+# --- メニューバー ---
+# 表示・非表示を決めるのは -currentHost の Bluetooth（2 = 表示 / 8 = 外す）。GUI で切り替えた前後の値で確認し、
+# このコマンドで書いて killall ControlCenter するとアイコンが出ることを実機で確かめた（2026-10 / macOS 26.5）。
+# VisibleCC は GUI で表示にしたときに 1 になるため合わせて書く（外しても 1 のままで、表示には効かない）
+if confirm "メニューバーに Bluetooth を出す"; then
+  defaults -currentHost write com.apple.controlcenter Bluetooth -int 2
+  defaults write com.apple.controlcenter "NSStatusItem VisibleCC Bluetooth" -bool true
+fi
+
 # --- Finder ---
 if confirm "Finder: パスバーを表示"; then
   defaults write com.apple.finder ShowPathbar -bool true
@@ -262,6 +271,7 @@ if [[ "$MODE" != "dry-run" ]]; then
   killall Finder 2>/dev/null || true
   killall Dock 2>/dev/null || true
   killall SystemUIServer 2>/dev/null || true
+  killall ControlCenter 2>/dev/null || true
   echo "完了しました。"
   echo
   echo "※ キーリピート・ファンクションキーは再ログイン後に反映されます"
