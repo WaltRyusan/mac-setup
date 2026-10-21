@@ -32,4 +32,7 @@ else
 fi
 
 # 3. 続きは bootstrap.sh（質問は端末から読むので、curl | bash でも答えられる）
+echo
+echo "準備ができました。続けて、アプリのインストールなどを順に進めます（途中で質問が出たら答えてください）。"
+echo
 exec bash "$DIR/scripts/bootstrap.sh" "$@"
